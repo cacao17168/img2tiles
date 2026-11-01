@@ -51,7 +51,7 @@ typedef struct {
 
 static void func_help(void) {
     printf("usage: img2tiles --file <file> [OPTIONS]\n");
-    printf(" ");
+    printf(" \n");
     printf("--file, -f         point input file\n");
     printf("--help, -h         show this note\n");
     printf("--verbose, -v      debug info\n");
@@ -110,10 +110,10 @@ static rect_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int 
         pixel_map[idx] = true;
     }
 
-    size_t startx;
-    size_t starty;
-    size_t endx;
-    size_t endy;
+    size_t startx = 0;
+    size_t starty = 0;
+    size_t endx = 0;
+    size_t endy = 0;
 
     for(size_t i = 0; i < (size_t)pixel_count; i++) {
         startx = pixels[i].x;
@@ -127,14 +127,14 @@ static rect_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int 
         endx = startx;
         endy = starty;
 
-        while((endx + 1) < img_width && pixel_map[starty * img_width + (endx + 1)]) {
+        while((endx + 1) < (size_t)img_width && pixel_map[starty * (size_t)img_width + (endx + 1)]) {
             endx++;
         }
 
         bool can_grow_down = true;
         while(can_grow_down) {
             size_t nexty = endy + 1;
-            if(nexty >= img_height) break;
+            if(nexty >= (size_t)img_height) break;
 
             for(size_t x = startx; x <= endx; x++) {
                 if(!pixel_map[starty * img_width + x]) {
@@ -224,10 +224,9 @@ int main(int argc, char **argv) {
             case 'q':
                 quiet = 1;
                 break;
-            case '?':
-                return ERR_IMG_UNK_ARG;
             default:
-                abort();
+                ERR_MSG("unknown argument.");
+                exit(ERR_IMG_UNK_ARG);
         }
     }
 
