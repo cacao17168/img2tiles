@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
     int verbose = 0, quiet = 0;
     int width, height, channels;
     int opt;
-    int tolerance;
+    int tolerance = 0;
     char *input_file = NULL;
 
     static struct option args[] = {
