@@ -1,4 +1,4 @@
-CC = gcc
+CC = clang
 TARGET = img2tiles
 
 YYJSON_DIR = third_party/yyjson
