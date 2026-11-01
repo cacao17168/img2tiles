@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -40,6 +41,11 @@ typedef struct {
     pixel_t *pixels;
     size_t count;
 } tile_t;
+
+typedef struct {
+    int x, y;
+    int w, h;
+} rect_t;
 
 
 
@@ -94,6 +100,67 @@ static color_t hex_to_rgb(char* hex_code) {
         color.b = (unsigned char)b;
     }
     return color;
+}
+
+static rect_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int img_height) {
+    bool* pixel_map = (bool*)calloc(img_width * img_height, sizeof(bool));
+
+    for(size_t i = 0; i < (size_t)pixel_count; i++) {
+        int idx = pixels[i].y * img_width + pixels[i].x;
+        pixel_map[idx] = true;
+    }
+
+    size_t startx;
+    size_t starty;
+    size_t endx;
+    size_t endy;
+
+    for(size_t i = 0; i < (size_t)pixel_count; i++) {
+        startx = pixels[i].x;
+        starty = pixels[i].y;
+        size_t start_idx = starty * img_width + startx;
+
+        if(!pixel_map[start_idx]) {
+            continue;
+        }
+
+        endx = startx;
+        endy = starty;
+
+        while((endx + 1) < img_width && pixel_map[starty * img_width + (endx + 1)]) {
+            endx++;
+        }
+
+        bool can_grow_down = true;
+        while(can_grow_down) {
+            size_t nexty = endy + 1;
+            if(nexty >= img_height) break;
+
+            for(size_t x = startx; x <= endx; x++) {
+                if(!pixel_map[starty * img_width + x]) {
+                    can_grow_down = false;
+                    break;
+                }
+            }
+
+            if(can_grow_down) {
+                endy++;
+            }
+
+            for(size_t y = starty; y <= endy; y++) {
+                for(size_t x = startx; x <= endx; x++) {
+                    pixel_map[y * img_width + x] = 0;
+                }
+            }
+        }
+    }
+
+    rect_t out;
+    out.x = startx;
+    out.y = starty;
+    out.w = endx - startx + 1;
+    out.h = endy - starty + 1;
+    return out;
 }
 
 
