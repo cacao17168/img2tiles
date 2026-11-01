@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "yyjson.h"
+#include "third_party/yyjson/yyjson.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "third_party/stb/stb_image.h"
@@ -163,6 +163,38 @@ static rect_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int 
     return out;
 }
 
+static char *add_extension(char *src, char *ext) {
+    char *src_no_ext = strtok(src, ".");
+
+    size_t src_no_ext_len = strlen(src_no_ext);
+    size_t ext_len = strlen(ext);
+
+    char *result = (char *)malloc(src_no_ext_len + ext_len + 1);
+
+    strcpy(result, src_no_ext);
+    strcat(result, ext);
+
+    return result;
+}
+
+yyjson_mut_val *create_rect_json_obj(yyjson_mut_doc *rdoc, rect_t *rct, color_t *clr) {
+    yyjson_mut_val *obj = yyjson_mut_obj(rdoc);
+
+    yyjson_mut_obj_add_int(rdoc, obj, "x", rct->x);
+    yyjson_mut_obj_add_int(rdoc, obj, "y", rct->y);
+    yyjson_mut_obj_add_int(rdoc, obj, "w", rct->w);
+    yyjson_mut_obj_add_int(rdoc, obj, "h", rct->h);
+
+    yyjson_mut_val *color_obj = yyjson_mut_obj(rdoc);
+    yyjson_mut_obj_add_int(rdoc, color_obj, "r", clr->r);
+    yyjson_mut_obj_add_int(rdoc, color_obj, "g", clr->g);
+    yyjson_mut_obj_add_int(rdoc, color_obj, "b", clr->b);
+    yyjson_mut_obj_add_int(rdoc, color_obj, "a", clr->a);
+
+    yyjson_mut_obj_add_val(rdoc, obj, "color", color_obj);
+    return obj;
+}
+
 
 
 int main(int argc, char **argv) {
@@ -241,8 +273,34 @@ int main(int argc, char **argv) {
         }
     }
 
+    yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+    yyjson_mut_val *root_array = yyjson_mut_arr(doc);
+    yyjson_mut_doc_set_root(doc, root_array);
+
+    for(size_t i = 0; i < (size_t)col_count; i++) {
+        rect_t rect = merge_pixels(tiles[i].pixels, tiles[i].count, width, height);
+        yyjson_mut_val *rect_obj = create_rect_json_obj(doc, &rect, &tiles[i].col);
+        yyjson_mut_arr_add_val(root_array, rect_obj);
+    }
+
+
+    char *output_file = add_extension(input_file, ".json");
+    yyjson_write_err err;
+    bool success = yyjson_mut_write_file(output_file, doc, YYJSON_WRITE_PRETTY, NULL, &err);
+
+    if(success) {
+        DEBUG("JSON file successfully generated!")
+    } else {
+        ERR_MSG("file write error")
+        printf("%s\n", err.msg);
+    }
+
+    free(output_file);
+    yyjson_mut_doc_free(doc);
     stbi_image_free(img);
     for(size_t i = 0; i < (size_t)col_count; i++) {
         free(tiles[i].pixels);
     }
+
+    return IMG_SUCCESS;
 }
