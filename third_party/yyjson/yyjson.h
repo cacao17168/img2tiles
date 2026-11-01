@@ -39,7 +39,7 @@
    This disables functions with "read" in their name.
    Reduces binary size by about 60%. */
 #ifndef YYJSON_DISABLE_READER
-#define YYJSON_DISABLE_READER 0
+#define YYJSON_DISABLE_READER 1
 #endif
 
 /* Define as 1 to disable JSON writer at compile-time.
