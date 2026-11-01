@@ -202,7 +202,6 @@ int main(int argc, char **argv) {
     int width, height, channels;
     int opt;
     char *input_file = NULL;
-    int status = 0;
 
     static struct option args[] = {
         {"file", required_argument, NULL, 'f'},
