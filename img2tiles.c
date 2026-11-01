@@ -21,6 +21,7 @@
 #define ERR_IMG_NOPERM     4
 #define ERR_IMG_PROC       5
 #define ERR_IMG_NOCOL      6
+#define ERR_IMG_MEMERR     7
 
 
 #define DEBUG(dbg_msg) if(verbose) printf("[DEBUG] " dbg_msg "\n");
@@ -104,6 +105,10 @@ static color_t hex_to_rgb(char* hex_code) {
 
 static rect_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int img_height) {
     bool* pixel_map = (bool*)calloc(img_width * img_height, sizeof(bool));
+    if(!pixel_map) {
+        ERR_MSG("pixel map memory allocating failed, exiting...")
+        exit(ERR_IMG_MEMERR);
+    }
 
     for(size_t i = 0; i < (size_t)pixel_count; i++) {
         int idx = pixels[i].y * img_width + pixels[i].x;
@@ -232,11 +237,14 @@ int main(int argc, char **argv) {
 
     int col_count = argc - optind;
     tile_t tiles[col_count];
+    memset(tiles, 0, sizeof(tiles));
 
     if(optind < argc) {
         DEBUG("processing colors")
+        size_t tile_idx = 0;
         while(optind < argc) {
-            tiles[optind].col = hex_to_rgb(argv[optind]);
+            tiles[tile_idx].col = hex_to_rgb(argv[optind]);
+            tile_idx++;
             optind++;
         }
     } else {
@@ -251,6 +259,7 @@ int main(int argc, char **argv) {
 
     DEBUG("opening file...")
     unsigned char* img = load_image(input_file, &width, &height, &channels, 4);
+    DEBUG("file processed successfully")
 
     for(size_t y = 0; y < (size_t)height; y++) {
         for(size_t x = 0; x < (size_t)width; x++) {
@@ -262,29 +271,37 @@ int main(int argc, char **argv) {
 
             for(size_t i = 0; i < (size_t)col_count; i++) {
                 if(r == tiles[i].col.r && g == tiles[i].col.g && b == tiles[i].col.b) {
-                    size_t memc = tiles[i].count++;
-                    tiles[i].pixels = realloc(tiles[i].pixels, sizeof(pixel_t) * memc);
-                    tiles[i].pixels[memc].x = x;
-                    tiles[i].pixels[memc].y = y;
+                    tiles[i].count++;
+                    pixel_t *tmp = realloc(tiles[i].pixels, sizeof(pixel_t) * tiles[i].count);
+                    tiles[i].pixels = tmp;
+                    tiles[i].pixels[tiles[i].count - 1].x = x;
+                    tiles[i].pixels[tiles[i].count - 1].y = y;
                 }
             }
         }
     }
 
+    DEBUG("colors compare processed successfully")
+
+    DEBUG("creating json entry...")
     yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
     yyjson_mut_val *root_array = yyjson_mut_arr(doc);
     yyjson_mut_doc_set_root(doc, root_array);
+    DEBUG("entry created successfully")
 
+    DEBUG("adding tiles and colors to json...")
     for(size_t i = 0; i < (size_t)col_count; i++) {
         rect_t rect = merge_pixels(tiles[i].pixels, tiles[i].count, width, height);
         yyjson_mut_val *rect_obj = create_rect_json_obj(doc, &rect, &tiles[i].col);
         yyjson_mut_arr_add_val(root_array, rect_obj);
     }
+    DEBUG("added successfully")
 
-
+    DEBUG("creating json file...")
     char *output_file = add_extension(input_file, ".json");
     yyjson_write_err err;
     bool success = yyjson_mut_write_file(output_file, doc, YYJSON_WRITE_PRETTY, NULL, &err);
+    DEBUG("created")
 
     if(success) {
         DEBUG("JSON file successfully generated!")
@@ -300,5 +317,6 @@ int main(int argc, char **argv) {
         free(tiles[i].pixels);
     }
 
+    DEBUG("resources freed, exiting...")
     return IMG_SUCCESS;
 }
