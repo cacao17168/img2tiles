@@ -56,12 +56,13 @@ typedef struct {
 
 
 static void func_help(void) {
-    printf("usage: img2tiles --file <file> [OPTIONS]\n");
+    printf("usage: img2tiles --file <file> [OPTIONS] color1-in-hex, color2-in-hex...\n");
     printf(" \n");
-    printf("--file, -f         point input file\n");
-    printf("--help, -h         show this note\n");
-    printf("--verbose, -v      debug info\n");
-    printf("--quiet, -q        no output\n");
+    printf("--file        -f         point input file\n");
+    printf("--help        -h         show this note\n");
+    printf("--verbose     -v         debug info\n");
+    printf("--quiet       -q         no output\n");
+    printf("--tolerance   -t         set how strict is check(0 is the most strict)\n");
 }
 
 static void check_vq(int v, int q) {
@@ -211,6 +212,12 @@ static void lock_outputs(void) {
     freopen("/dev/null", "w", stderr);
 }
 
+static bool color_matches(color_t *src, color_t *trgt, int tol) {
+    return abs(src->r - trgt->r) <= tol &&
+        abs(src->g - trgt->g) <= tol &&
+        abs(src->b - trgt->b) <= tol;
+}
+
 yyjson_mut_val *create_rect_json_obj(yyjson_mut_doc *rdoc, rect_t *rct, color_t *clr) {
     yyjson_mut_val *obj = yyjson_mut_obj(rdoc);
 
@@ -235,16 +242,19 @@ int main(int argc, char **argv) {
     int verbose = 0, quiet = 0;
     int width, height, channels;
     int opt;
+    int tolerance;
     char *input_file = NULL;
 
     static struct option args[] = {
-        {"file", required_argument, NULL, 'f'},
-        {"help", no_argument, NULL, 'h'},
-        {"verbose", no_argument, NULL, 'v'},
-        {"quiet", no_argument, NULL, 'q'}
+        {"file",       required_argument, NULL, 'f'},
+        {"help",       no_argument,       NULL, 'h'},
+        {"verbose",    no_argument,       NULL, 'v'},
+        {"quiet",      no_argument,       NULL, 'q'},
+        {"tolerance",  required_argument, NULL, 't'},
+        {0, 0, 0, 0}
     };
 
-    while((opt = getopt_long(argc, argv, "f:hvq", args, NULL)) != -1) {
+    while((opt = getopt_long(argc, argv, "f:hvqt:", args, NULL)) != -1) {
         switch(opt) {
             case 'f':
                 input_file = optarg;
@@ -258,9 +268,13 @@ int main(int argc, char **argv) {
             case 'q':
                 quiet = 1;
                 break;
-            default:
-                ERR_MSG("unknown argument.");
+            case 't':
+                tolerance = strtol(optarg, NULL, 10);
+                break;
+            case '?':
                 exit(ERR_IMG_UNK_ARG);
+            default:
+                abort();
         }
     }
 
@@ -319,12 +333,13 @@ int main(int argc, char **argv) {
         for(size_t x = 0; x < (size_t)width; x++) {
             size_t idx = (y * width + x) * 4;
 
-            unsigned char r = img[idx + 0];
-            unsigned char g = img[idx + 1];
-            unsigned char b = img[idx + 2];
+            color_t src_col;
+            src_col.r = img[idx + 0];
+            src_col.g = img[idx + 1];
+            src_col.b = img[idx + 2];
 
             for(size_t i = 0; i < (size_t)col_count; i++) {
-                if(r == tiles[i].col.r && g == tiles[i].col.g && b == tiles[i].col.b) {
+                if(color_matches(&src_col, &tiles[i].col, tolerance)) {
                     tiles[i].count++;
                     pixel_t *tmp = realloc(tiles[i].pixels, sizeof(pixel_t) * tiles[i].count);
                     if (!tmp) {
