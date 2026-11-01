@@ -48,6 +48,11 @@ typedef struct {
     int w, h;
 } rect_t;
 
+typedef struct {
+    rect_t *rects;
+    size_t count;
+} rect_list_t;
+
 
 
 static void func_help(void) {
@@ -91,9 +96,12 @@ static unsigned char* load_image(char* filename, int* w, int *h, int *ch, int im
 
 static color_t hex_to_rgb(char* hex_code) {
     color_t color = {0, 0, 0, 255};
-    unsigned int r, g, b;
 
-    if(hex_code[0] == '#') hex_code++;
+    if (*hex_code == '#') hex_code++;
+
+    if (strlen(hex_code) != 6) return color;
+
+    unsigned int r, g, b;
 
     if(sscanf(hex_code, "%02x%02x%02x", &r, &g, &b) == 3) {
         color.r = (unsigned char)r;
@@ -103,7 +111,10 @@ static color_t hex_to_rgb(char* hex_code) {
     return color;
 }
 
-static rect_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int img_height) {
+static rect_list_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int img_height) {
+    rect_list_t result = {0};
+    if(pixel_count <= 0) return result;
+
     bool* pixel_map = (bool*)calloc(img_width * img_height, sizeof(bool));
     if(!pixel_map) {
         ERR_MSG("pixel map memory allocating failed, exiting...")
@@ -142,7 +153,7 @@ static rect_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int 
             if(nexty >= (size_t)img_height) break;
 
             for(size_t x = startx; x <= endx; x++) {
-                if(!pixel_map[starty * img_width + x]) {
+                if(!pixel_map[nexty * img_width + x]) {
                     can_grow_down = false;
                     break;
                 }
@@ -151,33 +162,46 @@ static rect_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int 
             if(can_grow_down) {
                 endy++;
             }
+        }
 
-            for(size_t y = starty; y <= endy; y++) {
-                for(size_t x = startx; x <= endx; x++) {
-                    pixel_map[y * img_width + x] = 0;
-                }
+        for(size_t y = starty; y <= endy; y++) {
+            for(size_t x = startx; x <= endx; x++) {
+                pixel_map[y * img_width + x] = false;
             }
         }
+
+        rect_t *tmp = realloc(result.rects, sizeof(rect_t) * (result.count + 1));
+        if(!tmp) {
+            free(result.rects);
+            free(pixel_map);
+            ERR_MSG("rect memory allocating failed, exiting...")
+            exit(ERR_IMG_MEMERR);
+        }
+
+        result.rects = tmp;
+        result.rects[result.count].x = startx;
+        result.rects[result.count].y = starty;
+        result.rects[result.count].w = endx - startx + 1;
+        result.rects[result.count].h = endy - starty + 1;
+        result.count++;
     }
 
-    rect_t out = {0};
-    out.x = startx;
-    out.y = starty;
-    out.w = endx - startx + 1;
-    out.h = endy - starty + 1;
-    return out;
+    free(pixel_map);
+    return result;
 }
 
 static char *add_extension(char *src, char *ext) {
-    char *src_no_ext = strtok(src, ".");
+    const char *dot = strrchr(src, '.');
 
-    size_t src_no_ext_len = strlen(src_no_ext);
+    size_t len = dot ? (size_t)(dot - src) : strlen(src);
     size_t ext_len = strlen(ext);
 
-    char *result = (char *)malloc(src_no_ext_len + ext_len + 1);
+    char *result = (char *)malloc(len + ext_len + 1);
 
-    strcpy(result, src_no_ext);
-    strcat(result, ext);
+    if (!result) return NULL;
+
+    memcpy(result, src, len);
+    strcpy(result + len, ext);
 
     return result;
 }
@@ -268,6 +292,29 @@ int main(int argc, char **argv) {
     unsigned char* img = load_image(input_file, &width, &height, &channels, 4);
     DEBUG("file processed successfully")
 
+    if(verbose) {
+        printf("Image: %dx%d, channels: %d\n", width, height, channels);
+
+        printf("Target color: R=%u G=%u B=%u\n",
+            tiles[0].col.r,
+            tiles[0].col.g,
+            tiles[0].col.b
+        );
+
+        printf("\nFirst 10 pixels:\n");
+
+        for (int i = 0; i < 10 && i < width * height; i++) {
+            printf(
+                "Pixel %d: R=%u G=%u B=%u A=%u\n",
+                i,
+                img[i * 4],
+                img[i * 4 + 1],
+                img[i * 4 + 2],
+                img[i * 4 + 3]
+            );
+        }
+    }
+
     for(size_t y = 0; y < (size_t)height; y++) {
         for(size_t x = 0; x < (size_t)width; x++) {
             size_t idx = (y * width + x) * 4;
@@ -280,6 +327,11 @@ int main(int argc, char **argv) {
                 if(r == tiles[i].col.r && g == tiles[i].col.g && b == tiles[i].col.b) {
                     tiles[i].count++;
                     pixel_t *tmp = realloc(tiles[i].pixels, sizeof(pixel_t) * tiles[i].count);
+                    if (!tmp) {
+                        ERR_MSG("pixel memory allocating failed")
+                        exit(ERR_IMG_MEMERR);
+                    }
+
                     tiles[i].pixels = tmp;
                     tiles[i].pixels[tiles[i].count - 1].x = x;
                     tiles[i].pixels[tiles[i].count - 1].y = y;
@@ -296,11 +348,29 @@ int main(int argc, char **argv) {
     yyjson_mut_doc_set_root(doc, root_array);
     DEBUG("entry created successfully")
 
+    if(verbose) {
+        for (int i = 0; i < col_count; i++) {
+            printf(
+                "Color #%02X%02X%02X: %zu pixels\n",
+                tiles[i].col.r,
+                tiles[i].col.g,
+                tiles[i].col.b,
+                tiles[i].count
+            );
+        }
+    }
+
     DEBUG("adding tiles and colors to json...")
     for(size_t i = 0; i < (size_t)col_count; i++) {
-        rect_t rect = merge_pixels(tiles[i].pixels, tiles[i].count, width, height);
-        yyjson_mut_val *rect_obj = create_rect_json_obj(doc, &rect, &tiles[i].col);
-        yyjson_mut_arr_add_val(root_array, rect_obj);
+        if(tiles[i].count == 0) continue;
+        rect_list_t rects = merge_pixels(tiles[i].pixels, tiles[i].count, width, height);
+
+        for(size_t r = 0; r < rects.count; r++) {
+            yyjson_mut_val *rect_obj = create_rect_json_obj(doc, &rects.rects[r], &tiles[i].col);
+            yyjson_mut_arr_add_val(root_array, rect_obj);
+        }
+
+        free(rects.rects);
     }
     DEBUG("added successfully")
 
