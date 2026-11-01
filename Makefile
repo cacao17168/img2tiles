@@ -14,7 +14,7 @@ CFLAGS = -Wall -Wextra -O2 -I$(YYJSON_DIR) -I$(STB_IMG)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET)
+	$(CC) $(OBJS) -o $(TARGET) -lm
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
