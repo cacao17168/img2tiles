@@ -4,7 +4,7 @@ TARGET = img2tiles
 YYJSON_DIR = third_party/yyjson
 STB_IMG = third_party/stb
 
-SRCS = main.c $(YYJSON_DIR)/yyjson.c
+SRCS = img2tiles.c $(YYJSON_DIR)/yyjson.c
 OBJS = $(SRCS:.c=.o)
 
 CFLAGS = -Wall -Wextra -O2 -I$(YYJSON_DIR) -I$(STB_IMG)
