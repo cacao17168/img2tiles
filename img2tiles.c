@@ -182,6 +182,11 @@ static char *add_extension(char *src, char *ext) {
     return result;
 }
 
+static void lock_outputs(void) {
+    freopen("/dev/null", "w", stdout);
+    freopen("/dev/null", "w", stderr);
+}
+
 yyjson_mut_val *create_rect_json_obj(yyjson_mut_doc *rdoc, rect_t *rct, color_t *clr) {
     yyjson_mut_val *obj = yyjson_mut_obj(rdoc);
 
@@ -238,6 +243,8 @@ int main(int argc, char **argv) {
     int col_count = argc - optind;
     tile_t tiles[col_count];
     memset(tiles, 0, sizeof(tiles));
+
+    if(quiet) lock_outputs();
 
     if(optind < argc) {
         DEBUG("processing colors")
