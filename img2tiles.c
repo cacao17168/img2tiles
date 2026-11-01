@@ -23,8 +23,8 @@
 #define ERR_IMG_NOCOL      6
 
 
-#define DEBUG(dbg_msg) printf("[DEBUG]" dbg_msg "\n");
-#define ERR_MSG(err_msg) fprintf(stderr, RED "[ERROR]" RESET err_msg "\n");
+#define DEBUG(dbg_msg) if(verbose) printf("[DEBUG] " dbg_msg "\n");
+#define ERR_MSG(err_msg) fprintf(stderr, RED "[ERROR] " RESET err_msg "\n");
 
 
 
@@ -155,7 +155,7 @@ static rect_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int 
         }
     }
 
-    rect_t out;
+    rect_t out = {0};
     out.x = startx;
     out.y = starty;
     out.w = endx - startx + 1;
