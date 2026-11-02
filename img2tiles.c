@@ -22,6 +22,7 @@
 #define ERR_IMG_PROC       5
 #define ERR_IMG_NOCOL      6
 #define ERR_IMG_MEMERR     7
+#define ERR_IMG_HEX        8
 
 
 #define DEBUG(dbg_msg) if(verbose) printf("[DEBUG] " dbg_msg "\n");
@@ -56,7 +57,7 @@ typedef struct {
 
 
 static void func_help(void) {
-    printf("usage: img2tiles --file <file> [OPTIONS] color1-in-hex, color2-in-hex...\n");
+    printf("usage: img2tiles --file <file> [OPTIONS] <color 1> [color 2...]\n");
     printf(" \n");
     printf("--file        -f         point input file\n");
     printf("--help        -h         show this note\n");
@@ -100,14 +101,18 @@ static color_t hex_to_rgb(char* hex_code) {
 
     if (*hex_code == '#') hex_code++;
 
-    if (strlen(hex_code) != 6) return color;
+    if (strlen(hex_code) != 8) {
+        ERR_MSG("hex must be 8 symbols")
+        exit(ERR_IMG_HEX);
+    };
 
-    unsigned int r, g, b;
+    unsigned int r, g, b, a;
 
-    if(sscanf(hex_code, "%02x%02x%02x", &r, &g, &b) == 3) {
+    if(sscanf(hex_code, "%02x%02x%02x%02x", &r, &g, &b, &a) == 3) {
         color.r = (unsigned char)r;
         color.g = (unsigned char)g;
         color.b = (unsigned char)b;
+        color.a = (unsigned char)a;
     }
     return color;
 }
@@ -215,7 +220,8 @@ static void lock_outputs(void) {
 static bool color_matches(color_t *src, color_t *trgt, int tol) {
     return abs(src->r - trgt->r) <= tol &&
         abs(src->g - trgt->g) <= tol &&
-        abs(src->b - trgt->b) <= tol;
+        abs(src->b - trgt->b) <= tol &&
+        abs(src->a - trgt->a) <= tol;
 }
 
 yyjson_mut_val *create_rect_json_obj(yyjson_mut_doc *rdoc, rect_t *rct, color_t *clr) {
