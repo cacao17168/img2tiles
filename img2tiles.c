@@ -108,7 +108,7 @@ static color_t hex_to_rgb(char* hex_code) {
 
     unsigned int r, g, b, a;
 
-    if(sscanf(hex_code, "%02x%02x%02x%02x", &r, &g, &b, &a) == 3) {
+    if(sscanf(hex_code, "%02x%02x%02x%02x", &r, &g, &b, &a) == 4) {
         color.r = (unsigned char)r;
         color.g = (unsigned char)g;
         color.b = (unsigned char)b;
@@ -344,6 +344,7 @@ int main(int argc, char **argv) {
             src_col.r = img[idx + 0];
             src_col.g = img[idx + 1];
             src_col.b = img[idx + 2];
+            src_col.a = img[idx + 3];
 
             for(size_t i = 0; i < (size_t)col_count; i++) {
                 if(color_matches(&src_col, &tiles[i].col, tolerance)) {
