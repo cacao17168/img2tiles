@@ -54,38 +54,38 @@ If you prefer GCC, change the compiler specified in the Makefile from `clang` to
 ./img2tiles --file <image> [OPTIONS] <color1> [color2 ...]
 ```
 
-Colors must be specified in hexadecimal RGB format (`RRGGBB`). The `#` prefix is optional.
+Colors must be specified in hexadecimal RGB format (`RRGGBBAA`). The `#` prefix is optional.
 
 ### Examples
 
 Extract pure black pixels:
 
 ```bash
-./img2tiles -f default.png 000000
+./img2tiles -f default.png 000000FF
 ```
 
 Extract multiple colors:
 
 ```bash
-./img2tiles -f default.png 000000 FF0000 00FF00
+./img2tiles -f default.png 000000FF FF0000FF 00FF00FF
 ```
 
 Enable tolerance-based color matching:
 
 ```bash
-./img2tiles -f default.png --tolerance 2 000000
+./img2tiles -f default.png --tolerance 2 000000FF
 ```
 
 Enable verbose output:
 
 ```bash
-./img2tiles -f default.png --verbose 000000
+./img2tiles -f default.png --verbose 000000FF
 ```
 
 Run silently:
 
 ```bash
-./img2tiles -f default.png --quiet 000000
+./img2tiles -f default.png --quiet 000000FF
 ```
 
 ## Command-line Options
@@ -110,18 +110,16 @@ When tolerance is set to `0`, pixels must match the target RGB color exactly.
 
 A positive tolerance allows small differences between pixel colors and the target color.
 
-For example, with a target color of `000000` and tolerance of `2`:
+For example, with a target color of `000000FF` and tolerance of `2`:
 
-| Pixel RGB | Match |
+| Pixel RGBA | Match |
 |---|---|
-| `(0, 0, 0)` | Yes |
-| `(1, 0, 0)` | Yes |
-| `(2, 0, 0)` | Yes |
-| `(3, 0, 0)` | No |
+| `(0, 0, 0, 255)` | Yes |
+| `(1, 0, 0, 255)` | Yes |
+| `(2, 0, 0, 253)` | Yes |
+| `(3, 0, 0, 255)` | No |
 
 Tolerance is applied independently to each RGB channel.
-
-Alpha is not considered during color matching.
 
 ## Output Format
 
