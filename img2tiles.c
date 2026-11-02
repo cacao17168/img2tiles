@@ -315,10 +315,11 @@ int main(int argc, char **argv) {
     if(verbose) {
         printf("Image: %dx%d, channels: %d\n", width, height, channels);
 
-        printf("Target color: R=%u G=%u B=%u\n",
+        printf("Target color: R=%u G=%u B=%u A=%u\n",
             tiles[0].col.r,
             tiles[0].col.g,
-            tiles[0].col.b
+            tiles[0].col.b,
+            tiles[0].col.a
         );
 
         printf("\nFirst 10 pixels:\n");
