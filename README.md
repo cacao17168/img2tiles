@@ -6,7 +6,7 @@ It is designed to simplify the process of extracting colored regions from images
 
 ## Features
 
-- Extract pixels matching specified RGB colors.
+- Extract pixels matching specified RGBA colors.
 - Support for multiple target colors in a single run.
 - Strict and tolerance-based color matching.
 - Merge adjacent matching pixels into rectangular regions.
@@ -54,7 +54,7 @@ If you prefer GCC, change the compiler specified in the Makefile from `clang` to
 ./img2tiles --file <image> [OPTIONS] <color1> [color2 ...]
 ```
 
-Colors must be specified in hexadecimal RGB format (`RRGGBBAA`). The `#` prefix is optional.
+Colors must be specified in hexadecimal RGBA format (`RRGGBBAA`). The `#` prefix is optional.
 
 ### Examples
 
@@ -104,7 +104,7 @@ img2tiles supports two color matching approaches:
 
 **Strict matching**
 
-When tolerance is set to `0`, pixels must match the target RGB color exactly.
+When tolerance is set to `0`, pixels must match the target RGBA color exactly.
 
 **Tolerance-based matching**
 
@@ -119,7 +119,7 @@ For example, with a target color of `000000FF` and tolerance of `2`:
 | `(2, 0, 0, 253)` | Yes |
 | `(3, 0, 0, 255)` | No |
 
-Tolerance is applied independently to each RGB channel.
+Tolerance is applied independently to each RGBA channel.
 
 ## Output Format
 
