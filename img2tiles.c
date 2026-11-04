@@ -206,8 +206,13 @@ static char *add_extension(char *src, char *ext) {
 }
 
 static void lock_outputs(void) {
+#if defined(_WIN32) || defined(_WIN64)
+    freopen("nul", "w", stdout);
+    freopen("nul", "w", stderr);
+#else
     freopen("/dev/null", "w", stdout);
     freopen("/dev/null", "w", stderr);
+#endif
 }
 
 static bool color_matches(color_t *src, color_t *trgt, int tol) {
