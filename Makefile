@@ -10,15 +10,21 @@ OBJS = $(SRCS:.c=.o)
 
 CFLAGS = -Wall -Wextra -O2 -I$(YYJSON_DIR) -I$(STB_IMG)
 
-.PHONY: all clean
+.PHONY: all linux windows build_target clean
 
-all: $(TARGET)
+all: linux
 
-$(TARGET): $(OBJS)
+linux: build_target
+
+windows: CC = x86_64-w64-mingw32-gcc
+windows: CFLAGS += -static
+windows: build_target
+
+build_target: $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) -lm
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(TARGET).o $(YYJSON_DIR)/*.o $(STB_IMG)/*.o $(YA_GETOPT_DIR)/*.o
+	rm -f $(TARGET) $(TARGET).exe $(OBJS)
