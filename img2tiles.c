@@ -2,7 +2,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "third_party/yyjson/yyjson.h"
 #include "third_party/ya_getopt/ya_getopt.h"
@@ -78,20 +77,6 @@ static void check_vq(int v, int q) {
     if(v && q) {
         ERR_MSG("can't use verbose and quiet at the same time.");
         exit(ERR_IMG_VQ);
-    }
-}
-
-static void is_file_exist(char* filename) {
-    if(filename == NULL) {
-        ERR_MSG("file not found: %s", filename);
-        exit(ERR_IMG_NOFILE);
-    }
-}
-
-static void has_access(char* filename) {
-    if(access(filename, F_OK) == -1) {
-        ERR_MSG("permission denied: %s", filename);
-        exit(ERR_IMG_NOPERM);
     }
 }
 
@@ -313,8 +298,6 @@ int main(int argc, char **argv) {
 
     DEBUG("checking args for errors...");
     check_vq(verbose, quiet);
-    is_file_exist(input_file);
-    has_access(input_file);
 
     DEBUG("opening file: %s", input_file);
     unsigned char* img = load_image(input_file, &width, &height, &channels, 4);
