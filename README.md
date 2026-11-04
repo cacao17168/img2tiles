@@ -1,6 +1,6 @@
 # img2tiles
 
-**img2tiles** is a lightweight command-line utility written in C that converts image colors into rectangular tiles and exports their coordinates and colors to a JSON file.
+**img2tiles** is a lightweight cross-platform command-line utility written in C that converts image colors into rectangular tiles and exports their coordinates and colors to a JSON file.
 
 It is designed to simplify the process of extracting colored regions from images, making them easier to use in 2D game development and other graphics-related projects.
 
@@ -19,6 +19,7 @@ It is designed to simplify the process of extracting colored regions from images
 - Clang (default compiler).
 - GNU Make.
 - GCC (optional alternative compiler).
+- MinGW (optional compiler for Windows build).
 
 ### Dependencies
 
@@ -32,12 +33,16 @@ All libraries are included in the project under `third_party/`.
 
 ## Installation
 
+### Linux
+
 Clone the repository:
 
 ```bash
 git clone https://github.com/cacao17168/img2tiles.git
 cd img2tiles
 ```
+
+### Building for Linux
 
 Build the project:
 
@@ -48,6 +53,16 @@ make
 By default, the project uses Clang.
 
 If you prefer GCC, change the compiler specified in the Makefile from `clang` to `gcc`.
+
+### Building for Windows
+
+You can cross-compile the Windows executable from Linux using **MinGW**.
+
+```bash
+make windows
+```
+
+This will create statically linked `img2tiles.exe` binary.
 
 ## Usage
 
