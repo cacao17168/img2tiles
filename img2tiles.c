@@ -24,11 +24,19 @@
 #define ERR_IMG_MEMERR     7
 #define ERR_IMG_HEX        8
 
+extern int verbose;
 
-#define DEBUG(dbg_msg) if(verbose) printf("[DEBUG] " dbg_msg "\n");
-#define ERR_MSG(err_msg) fprintf(stderr, RED "[ERROR] " RESET err_msg "\n");
+#define DEBUG(fmt, ...) \
+    do { \
+        if(verbose) { \
+            printf("[DEBUG] " fmt "\n", ##__VA_ARGS__); \
+        } \
+    } while(0)
 
-
+#define ERR_MSG(fmt, ...) \
+    do { \
+        fprintf(stderr, RED "[ERROR] " fmt RESET "\n", ##__VA_ARGS__); \
+    } while (0)
 
 typedef struct {
     unsigned char r, g, b, a;
@@ -68,21 +76,21 @@ static void func_help(void) {
 
 static void check_vq(int v, int q) {
     if(v && q) {
-        ERR_MSG("can't use verbose and quiet at the same time.")
+        ERR_MSG("can't use verbose and quiet at the same time.");
         exit(ERR_IMG_VQ);
     }
 }
 
 static void is_file_exist(char* filename) {
     if(filename == NULL) {
-        ERR_MSG("file not found.")
+        ERR_MSG("file not found: %s", filename);
         exit(ERR_IMG_NOFILE);
     }
 }
 
 static void has_access(char* filename) {
     if(access(filename, F_OK) == -1) {
-        ERR_MSG("permission denied.")
+        ERR_MSG("permission denied: %s", filename);
         exit(ERR_IMG_NOPERM);
     }
 }
@@ -90,7 +98,7 @@ static void has_access(char* filename) {
 static unsigned char* load_image(char* filename, int* w, int *h, int *ch, int img_bytes) {
     unsigned char* raw = stbi_load(filename, w, h, ch, img_bytes);
     if(!raw) {
-        ERR_MSG("file processing failed.")
+        ERR_MSG("file processing failed: %s", filename);
         exit(ERR_IMG_PROC);
     }
     return raw;
@@ -102,7 +110,7 @@ static color_t hex_to_rgb(char* hex_code) {
     if (*hex_code == '#') hex_code++;
 
     if (strlen(hex_code) != 8) {
-        ERR_MSG("hex must be 8 symbols")
+        ERR_MSG("hex must be 8 symbols");
         exit(ERR_IMG_HEX);
     };
 
@@ -123,7 +131,7 @@ static rect_list_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width,
 
     bool* pixel_map = (bool*)calloc(img_width * img_height, sizeof(bool));
     if(!pixel_map) {
-        ERR_MSG("pixel map memory allocating failed, exiting...")
+        ERR_MSG("pixel map memory allocating failed.");
         exit(ERR_IMG_MEMERR);
     }
 
@@ -180,7 +188,7 @@ static rect_list_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width,
         if(!tmp) {
             free(result.rects);
             free(pixel_map);
-            ERR_MSG("rect memory allocating failed, exiting...")
+            ERR_MSG("rect memory allocating failed");
             exit(ERR_IMG_MEMERR);
         }
 
@@ -291,7 +299,7 @@ int main(int argc, char **argv) {
     if(quiet) lock_outputs();
 
     if(optind < argc) {
-        DEBUG("processing colors")
+        DEBUG("processing colors...");
         size_t tile_idx = 0;
         while(optind < argc) {
             tiles[tile_idx].col = hex_to_rgb(argv[optind]);
@@ -299,18 +307,18 @@ int main(int argc, char **argv) {
             optind++;
         }
     } else {
-        ERR_MSG("no colors received.")
+        ERR_MSG("no colors received.");
         return ERR_IMG_NOCOL;
     }
 
-    DEBUG("checking args for errors...")
+    DEBUG("checking args for errors...");
     check_vq(verbose, quiet);
     is_file_exist(input_file);
     has_access(input_file);
 
-    DEBUG("opening file...")
+    DEBUG("opening file: %s", input_file);
     unsigned char* img = load_image(input_file, &width, &height, &channels, 4);
-    DEBUG("file processed successfully")
+    DEBUG("file processed successfully");
 
     if(verbose) {
         printf("Image: %dx%d, channels: %d\n", width, height, channels);
@@ -351,7 +359,7 @@ int main(int argc, char **argv) {
                     tiles[i].count++;
                     pixel_t *tmp = realloc(tiles[i].pixels, sizeof(pixel_t) * tiles[i].count);
                     if (!tmp) {
-                        ERR_MSG("pixel memory allocating failed")
+                        ERR_MSG("pixel memory allocating failed.");
                         exit(ERR_IMG_MEMERR);
                     }
 
@@ -363,13 +371,13 @@ int main(int argc, char **argv) {
         }
     }
 
-    DEBUG("colors compare processed successfully")
+    DEBUG("colors compare processed successfully.");
 
-    DEBUG("creating json entry...")
+    DEBUG("creating json entry...");
     yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
     yyjson_mut_val *root_array = yyjson_mut_arr(doc);
     yyjson_mut_doc_set_root(doc, root_array);
-    DEBUG("entry created successfully")
+    DEBUG("entry created successfully.");
 
     if(verbose) {
         for (int i = 0; i < col_count; i++) {
@@ -383,7 +391,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    DEBUG("adding tiles and colors to json...")
+    DEBUG("adding tiles and colors to json...");
     for(size_t i = 0; i < (size_t)col_count; i++) {
         if(tiles[i].count == 0) continue;
         rect_list_t rects = merge_pixels(tiles[i].pixels, tiles[i].count, width, height);
@@ -395,19 +403,18 @@ int main(int argc, char **argv) {
 
         free(rects.rects);
     }
-    DEBUG("added successfully")
+    DEBUG("added successfully");
 
-    DEBUG("creating json file...")
+    DEBUG("creating json file...");
     char *output_file = add_extension(input_file, ".json");
     yyjson_write_err err;
     bool success = yyjson_mut_write_file(output_file, doc, YYJSON_WRITE_PRETTY, NULL, &err);
-    DEBUG("created")
+    DEBUG("created: %s", output_file);
 
     if(success) {
-        DEBUG("JSON file successfully generated!")
+        DEBUG("JSON file successfully generated!");
     } else {
-        ERR_MSG("file write error")
-        printf("%s\n", err.msg);
+        ERR_MSG("file write error: %s", err.msg);
     }
 
     free(output_file);
@@ -417,6 +424,6 @@ int main(int argc, char **argv) {
         free(tiles[i].pixels);
     }
 
-    DEBUG("resources freed, exiting...")
+    DEBUG("resources freed.");
     return IMG_SUCCESS;
 }
