@@ -28,7 +28,7 @@ The project uses the following third-party libraries:
 - [yyjson](https://github.com/ibireme/yyjson) — JSON generation and serialization.
 - [ya_getopt](https://github.com/kubo/ya_getopt) — parsing arguments.
 
-Both libraries are included in the project under `third_party/`.
+All libraries are included in the project under `third_party/`.
 
 ## Installation
 
