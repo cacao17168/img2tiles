@@ -21,4 +21,4 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f main.o $(YYJSON_DIR)/*.o $(STB_IMG)/*.o
+	rm -f $(TARGET).o $(YYJSON_DIR)/*.o $(STB_IMG)/*.o $(YA_GETOPT_DIR)/*.o
