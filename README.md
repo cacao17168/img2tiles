@@ -33,8 +33,6 @@ All libraries are included in the project under `third_party/`.
 
 ## Installation
 
-### Linux
-
 Clone the repository:
 
 ```bash
