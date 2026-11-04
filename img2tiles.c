@@ -1,11 +1,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <getopt.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "third_party/yyjson/yyjson.h"
+#include "third_party/ya_getopt/ya_getopt.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "third_party/stb/stb_image.h"
