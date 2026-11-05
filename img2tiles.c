@@ -298,9 +298,6 @@ int main(int argc, char **argv) {
     tile_t tiles[col_count];
     memset(tiles, 0, sizeof(tiles));
 
-    if(quiet) lock_outputs();
-
-    
     DEBUG("processing colors...");
     size_t tile_idx = 0;
     while(optind < argc) {
@@ -308,10 +305,11 @@ int main(int argc, char **argv) {
         tile_idx++;
         optind++;
     }
-    
 
     DEBUG("checking args for errors...");
     check_vq(verbose, quiet);
+
+    if(quiet) lock_outputs();
 
     DEBUG("opening file: %s", input_file);
     unsigned char* img = load_image(input_file, &width, &height, &channels, 4);
