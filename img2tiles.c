@@ -49,7 +49,7 @@ typedef struct {
 typedef struct {
     color_t col;
     pixel_t *pixels;
-    size_t count;
+    size_t count, cap;
 } tile_t;
 
 typedef struct {
@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct {
     rect_t *rects;
-    size_t count;
+    size_t count, cap;
 } rect_list_t;
 
 
@@ -116,7 +116,7 @@ static color_t hex_to_rgb(char* hex_code) {
     return color;
 }
 
-static rect_list_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width, int img_height) {
+static rect_list_t merge_pixels(pixel_t *pixels, size_t pixel_count, int img_width, int img_height) {
     rect_list_t result = {0};
     if(pixel_count <= 0) return result;
 
@@ -126,7 +126,7 @@ static rect_list_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width,
         exit(ERR_IMG_MEMERR);
     }
 
-    for(size_t i = 0; i < (size_t)pixel_count; i++) {
+    for(size_t i = 0; i < pixel_count; i++) {
         int idx = pixels[i].y * img_width + pixels[i].x;
         pixel_map[idx] = true;
     }
@@ -136,7 +136,7 @@ static rect_list_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width,
     size_t endx = 0;
     size_t endy = 0;
 
-    for(size_t i = 0; i < (size_t)pixel_count; i++) {
+    for(size_t i = 0; i < pixel_count; i++) {
         startx = pixels[i].x;
         starty = pixels[i].y;
         size_t start_idx = starty * img_width + startx;
@@ -175,15 +175,19 @@ static rect_list_t merge_pixels(pixel_t *pixels, int pixel_count, int img_width,
             }
         }
 
-        rect_t *tmp = realloc(result.rects, sizeof(rect_t) * (result.count + 1));
-        if(!tmp) {
-            free(result.rects);
-            free(pixel_map);
-            ERR_MSG("rect memory allocating failed");
-            exit(ERR_IMG_MEMERR);
+        if(result.count == result.cap) {
+            size_t new_cap = (result.cap == 0) ? 4 : result.cap * 2;
+            rect_t *tmp = realloc(result.rects, sizeof(rect_t) * new_cap);
+            if(!tmp) {
+                free(result.rects);
+                free(pixel_map);
+                ERR_MSG("rect memory allocating failed");
+                exit(ERR_IMG_MEMERR);
+            }
+
+            result.rects = tmp;
         }
 
-        result.rects = tmp;
         result.rects[result.count].x = startx;
         result.rects[result.count].y = starty;
         result.rects[result.count].w = endx - startx + 1;
@@ -351,16 +355,25 @@ int main(int argc, char **argv) {
 
             for(size_t i = 0; i < (size_t)col_count; i++) {
                 if(color_matches(&src_col, &tiles[i].col, tolerance)) {
-                    tiles[i].count++;
-                    pixel_t *tmp = realloc(tiles[i].pixels, sizeof(pixel_t) * tiles[i].count);
-                    if (!tmp) {
-                        ERR_MSG("pixel memory allocating failed.");
-                        exit(ERR_IMG_MEMERR);
-                    }
+                    if(tiles[i].count == tiles[i].cap) {
+                        size_t new_cap = (tiles[i].cap == 0) ? 4 : tiles[i].cap * 2;
+                        pixel_t *tmp = realloc(tiles[i].pixels, sizeof(pixel_t) * new_cap);
+                        if (!tmp) {
+                            ERR_MSG("pixel memory allocating failed.");
+                            exit(ERR_IMG_MEMERR);
+                        }
 
-                    tiles[i].pixels = tmp;
-                    tiles[i].pixels[tiles[i].count - 1].x = x;
-                    tiles[i].pixels[tiles[i].count - 1].y = y;
+                        tiles[i].cap = new_cap;
+                        tiles[i].count++;
+
+                        tiles[i].pixels = tmp;
+                        tiles[i].pixels[tiles[i].count - 1].x = x;
+                        tiles[i].pixels[tiles[i].count - 1].y = y;
+                    } else {
+                        tiles[i].count++;
+                        tiles[i].pixels[tiles[i].count - 1].x = x;
+                        tiles[i].pixels[tiles[i].count - 1].y = y;
+                    }
                 }
             }
         }
