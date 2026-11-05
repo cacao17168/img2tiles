@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "third_party/yyjson/yyjson.h"
-#include "third_party/ya_getopt/ya_getopt.h"
+#include "yyjson.h"
+#include "ya_getopt.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "third_party/stb/stb_image.h"
