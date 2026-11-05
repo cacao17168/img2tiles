@@ -7,7 +7,7 @@
 #include "ya_getopt.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "third_party/stb/stb_image.h"
+#include "stb_image.h"
 
 #define RED     "\033[31m"
 #define RESET   "\033[0m"
