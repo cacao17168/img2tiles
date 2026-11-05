@@ -81,6 +81,11 @@ static void check_vq(int v, int q) {
 }
 
 static unsigned char* load_image(char* filename, int* w, int *h, int *ch, int img_bytes) {
+    if(!filename) {
+        ERR_MSG("input file not specified.");
+        exit(ERR_IMG_NOFILE);
+    }
+
     unsigned char* raw = stbi_load(filename, w, h, ch, img_bytes);
     if(!raw) {
         ERR_MSG("file processing failed: %s", filename);
