@@ -289,23 +289,26 @@ int main(int argc, char **argv) {
     }
 
     int col_count = argc - optind;
+
+    if(col_count <= 0) {
+        ERR_MSG("no colors received.");
+        return ERR_IMG_NOCOL;
+    }
+
     tile_t tiles[col_count];
     memset(tiles, 0, sizeof(tiles));
 
     if(quiet) lock_outputs();
 
-    if(optind < argc) {
-        DEBUG("processing colors...");
-        size_t tile_idx = 0;
-        while(optind < argc) {
-            tiles[tile_idx].col = hex_to_rgb(argv[optind]);
-            tile_idx++;
-            optind++;
-        }
-    } else {
-        ERR_MSG("no colors received.");
-        return ERR_IMG_NOCOL;
+    
+    DEBUG("processing colors...");
+    size_t tile_idx = 0;
+    while(optind < argc) {
+        tiles[tile_idx].col = hex_to_rgb(argv[optind]);
+        tile_idx++;
+        optind++;
     }
+    
 
     DEBUG("checking args for errors...");
     check_vq(verbose, quiet);
