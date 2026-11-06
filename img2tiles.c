@@ -24,7 +24,7 @@
 #define ERR_IMG_MEMERR     7
 #define ERR_IMG_HEX        8
 
-extern int verbose;
+int verbose;
 
 #define DEBUG(fmt, ...) \
     do { \
@@ -37,6 +37,14 @@ extern int verbose;
     do { \
         fprintf(stderr, RED "[ERROR] " fmt RESET "\n", ##__VA_ARGS__); \
     } while (0)
+
+typedef struct {
+    char *input_file;
+    int help;
+    int verbose;
+    int quiet;
+    int tolerance;
+} option_line_t;
 
 typedef struct {
     unsigned char r, g, b, a;
@@ -232,6 +240,56 @@ static bool color_matches(color_t *src, color_t *trgt, int tol) {
         abs(src->a - trgt->a) <= tol;
 }
 
+static int parse_args(int argc, char **argv, option_line_t *options) {
+    options->input_file = NULL;
+    options->help = 0;
+    options->verbose = 0;
+    options->quiet = 0;
+    options->tolerance = 0;
+
+    const char *short_options = "f:hvqt:";
+
+    const struct option long_options[] = {
+        {"file",       required_argument, NULL, 'f'},
+        {"help",       no_argument,       NULL, 'h'},
+        {"verbose",    no_argument,       NULL, 'v'},
+        {"quiet",      no_argument,       NULL, 'q'},
+        {"tolerance",  required_argument, NULL, 't'},
+        {NULL, 0, NULL, 0}
+    };
+
+    int opt;
+    int option_index = 0;
+
+    optind = 1;
+
+    while((opt = getopt_long(argc, argv, short_options, long_options, &option_index)) != -1) {
+        switch(opt) {
+            case 'f':
+                options->input_file = optarg;
+                break;
+            case 'h':
+                options->help = 1;
+                break;
+            case 'v':
+                options->verbose = 1;
+                break;
+            case 'q':
+                options->quiet = 1;
+                break;
+            case 't':
+                options->tolerance = strtol(optarg, NULL, 10);
+                break;
+            case '?':
+                return -1;
+            default:
+                return -2;
+        }
+    }
+
+    return 0;
+}
+
 yyjson_mut_val *create_rect_json_obj(yyjson_mut_doc *rdoc, rect_t *rct, color_t *clr) {
     yyjson_mut_val *obj = yyjson_mut_obj(rdoc);
 
@@ -253,43 +311,19 @@ yyjson_mut_val *create_rect_json_obj(yyjson_mut_doc *rdoc, rect_t *rct, color_t 
 
 
 int main(int argc, char **argv) {
-    int verbose = 0, quiet = 0;
     int width, height, channels;
-    int opt;
-    int tolerance = 0;
-    char *input_file = NULL;
+    option_line_t args;
 
-    static struct option args[] = {
-        {"file",       required_argument, NULL, 'f'},
-        {"help",       no_argument,       NULL, 'h'},
-        {"verbose",    no_argument,       NULL, 'v'},
-        {"quiet",      no_argument,       NULL, 'q'},
-        {"tolerance",  required_argument, NULL, 't'},
-        {0, 0, 0, 0}
-    };
+    int stat = parse_args(argc, argv, &args);
+    if(stat == -1) {
+        return ERR_IMG_UNK_ARG;
+    } else if(stat == -2) {
+        abort();
+    }
 
-    while((opt = getopt_long(argc, argv, "f:hvqt:", args, NULL)) != -1) {
-        switch(opt) {
-            case 'f':
-                input_file = optarg;
-                break;
-            case 'h':
-                func_help();
-                return 0;
-            case 'v':
-                verbose = 1;
-                break;
-            case 'q':
-                quiet = 1;
-                break;
-            case 't':
-                tolerance = strtol(optarg, NULL, 10);
-                break;
-            case '?':
-                exit(ERR_IMG_UNK_ARG);
-            default:
-                abort();
-        }
+    if(args.help) {
+        func_help();
+        return IMG_SUCCESS;
     }
 
     int col_count = argc - optind;
@@ -311,36 +345,31 @@ int main(int argc, char **argv) {
     }
 
     DEBUG("checking args for errors...");
-    check_vq(verbose, quiet);
+    check_vq(args.verbose, args.quiet);
 
-    if(quiet) lock_outputs();
+    if(args.quiet) lock_outputs();
 
-    DEBUG("opening file: %s", input_file);
-    unsigned char* img = load_image(input_file, &width, &height, &channels, 4);
+    DEBUG("opening file: %s", args.input_file);
+    unsigned char* img = load_image(args.input_file, &width, &height, &channels, 4);
     DEBUG("file processed successfully");
 
-    if(verbose) {
-        printf("Image: %dx%d, channels: %d\n", width, height, channels);
-
-        printf("Target color: R=%u G=%u B=%u A=%u\n",
-            tiles[0].col.r,
-            tiles[0].col.g,
-            tiles[0].col.b,
-            tiles[0].col.a
+    DEBUG("Image: %dx%d, channels: %d\n", width, height, channels);
+    DEBUG("Target color: R=%u G=%u B=%u A=%u\n",
+        tiles[0].col.r,
+        tiles[0].col.g,
+        tiles[0].col.b,
+        tiles[0].col.a
+    );
+    DEBUG("\nFirst 10 pixels:\n");
+    for (int i = 0; i < 10 && i < width * height; i++) {
+        DEBUG(
+            "Pixel %d: R=%u G=%u B=%u A=%u\n",
+            i,
+            img[i * 4],
+            img[i * 4 + 1],
+            img[i * 4 + 2],
+            img[i * 4 + 3]
         );
-
-        printf("\nFirst 10 pixels:\n");
-
-        for (int i = 0; i < 10 && i < width * height; i++) {
-            printf(
-                "Pixel %d: R=%u G=%u B=%u A=%u\n",
-                i,
-                img[i * 4],
-                img[i * 4 + 1],
-                img[i * 4 + 2],
-                img[i * 4 + 3]
-            );
-        }
     }
 
     for(size_t y = 0; y < (size_t)height; y++) {
@@ -354,7 +383,7 @@ int main(int argc, char **argv) {
             src_col.a = img[idx + 3];
 
             for(size_t i = 0; i < (size_t)col_count; i++) {
-                if(color_matches(&src_col, &tiles[i].col, tolerance)) {
+                if(color_matches(&src_col, &tiles[i].col, args.tolerance)) {
                     if(tiles[i].count == tiles[i].cap) {
                         size_t new_cap = (tiles[i].cap == 0) ? 4 : tiles[i].cap * 2;
                         pixel_t *tmp = realloc(tiles[i].pixels, sizeof(pixel_t) * new_cap);
@@ -387,16 +416,14 @@ int main(int argc, char **argv) {
     yyjson_mut_doc_set_root(doc, root_array);
     DEBUG("entry created successfully.");
 
-    if(verbose) {
-        for (int i = 0; i < col_count; i++) {
-            printf(
-                "Color #%02X%02X%02X: %zu pixels\n",
-                tiles[i].col.r,
-                tiles[i].col.g,
-                tiles[i].col.b,
-                tiles[i].count
-            );
-        }
+    for (int i = 0; i < col_count; i++) {
+        DEBUG(
+            "Color #%02X%02X%02X: %zu pixels\n",
+            tiles[i].col.r,
+            tiles[i].col.g,
+            tiles[i].col.b,
+            tiles[i].count
+        );
     }
 
     DEBUG("adding tiles and colors to json...");
@@ -414,7 +441,7 @@ int main(int argc, char **argv) {
     DEBUG("added successfully");
 
     DEBUG("creating json file...");
-    char *output_file = add_extension(input_file, ".json");
+    char *output_file = add_extension(args.input_file, ".json");
     yyjson_write_err err;
     bool success = yyjson_mut_write_file(output_file, doc, YYJSON_WRITE_PRETTY, NULL, &err);
     DEBUG("created: %s", output_file);
