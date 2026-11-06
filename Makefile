@@ -23,8 +23,14 @@ windows: build_target
 build_target: $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) -lm
 
+libtest.a: $(TARGET).o
+	objcopy --redefine-sym main=$(TARGET)_main $^ $(TARGET)_aliased.o
+	ar rcs $@ $(TARGET)_aliased.o
+	rm -f $^ $(TARGET)_aliased.o src/$@
+	mv $@ src/$@
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(TARGET) $(TARGET).exe $(OBJS)
+	rm -f $(TARGET) $(TARGET).exe $(OBJS) src/libtest.a
