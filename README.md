@@ -28,6 +28,7 @@ The project uses the following third-party libraries:
 - [stb_image](https://github.com/nothings/stb) — image loading.
 - [yyjson](https://github.com/ibireme/yyjson) — JSON generation and serialization.
 - [ya_getopt](https://github.com/kubo/ya_getopt) — parsing arguments.
+- [caotests](https://github.com/cacao17168/caotests) — simple unit testing framework.
 
 All libraries are included in the project under `third_party/`.
 
