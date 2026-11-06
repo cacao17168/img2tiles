@@ -13,7 +13,7 @@ USER_TESTS_DIR = ../../user_tests
 
 PROJECT_LIB = ../../src/libtest.a
 USER_SRC = $(wildcard $(USER_TESTS_DIR)/*.c)
-SRC = $(SRC_DIR)/test_lib.c $(TESTS_DIR)/meta_tests.c $(TESTS_DIR)/flags_meta_tests.c
+SRC = $(SRC_DIR)/test_lib.c $(TESTS_DIR)/meta_tests.c $(TESTS_DIR)/flags_meta_tests.c $(USER_SRC)
 SRC_FIXT = $(SRC_DIR)/test_lib.c $(TESTS_DIR)/fixture.c
 
 all: test_framework fixture_tests
