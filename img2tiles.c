@@ -72,7 +72,7 @@ typedef struct {
 
 
 
-static void func_help(void) {
+void _img2tiles_func_help(void) {
     printf("usage: img2tiles --file <file> [OPTIONS] <color 1> [color 2...]\n");
     printf(" \n");
     printf("--file        -f         point input file\n");
@@ -82,14 +82,14 @@ static void func_help(void) {
     printf("--tolerance   -t         set how strict is check(0 is the most strict)\n");
 }
 
-static void check_vq(int v, int q) {
+void _img2tiles_check_vq(int v, int q) {
     if(v && q) {
         ERR_MSG("can't use verbose and quiet at the same time.");
         exit(ERR_IMG_VQ);
     }
 }
 
-static unsigned char* load_image(char* filename, int* w, int *h, int *ch, int img_bytes) {
+unsigned char* _img2tiles_load_image(char* filename, int* w, int *h, int *ch, int img_bytes) {
     if(!filename) {
         ERR_MSG("input file not specified.");
         exit(ERR_IMG_NOFILE);
@@ -103,7 +103,7 @@ static unsigned char* load_image(char* filename, int* w, int *h, int *ch, int im
     return raw;
 }
 
-static color_t hex_to_rgb(char* hex_code) {
+color_t _img2tiles_hex_to_rgb(char* hex_code) {
     color_t color = {0, 0, 0, 255};
 
     if (*hex_code == '#') hex_code++;
@@ -124,7 +124,7 @@ static color_t hex_to_rgb(char* hex_code) {
     return color;
 }
 
-static rect_list_t merge_pixels(pixel_t *pixels, size_t pixel_count, int img_width, int img_height) {
+rect_list_t _img2tiles_merge_pixels(pixel_t *pixels, size_t pixel_count, int img_width, int img_height) {
     rect_list_t result = {0};
     if(pixel_count <= 0) return result;
 
@@ -207,7 +207,7 @@ static rect_list_t merge_pixels(pixel_t *pixels, size_t pixel_count, int img_wid
     return result;
 }
 
-static char *add_extension(char *src, char *ext) {
+char *_img2tiles_add_extension(char *src, char *ext) {
     const char *dot = strrchr(src, '.');
 
     size_t len = dot ? (size_t)(dot - src) : strlen(src);
@@ -223,7 +223,7 @@ static char *add_extension(char *src, char *ext) {
     return result;
 }
 
-static void lock_outputs(void) {
+void _img2tiles_lock_outputs(void) {
 #if defined(_WIN32) || defined(_WIN64)
     freopen("nul", "w", stdout);
     freopen("nul", "w", stderr);
@@ -233,14 +233,14 @@ static void lock_outputs(void) {
 #endif
 }
 
-static bool color_matches(color_t *src, color_t *trgt, int tol) {
+bool _img2tiles_color_matches(color_t *src, color_t *trgt, int tol) {
     return abs(src->r - trgt->r) <= tol &&
         abs(src->g - trgt->g) <= tol &&
         abs(src->b - trgt->b) <= tol &&
         abs(src->a - trgt->a) <= tol;
 }
 
-static int parse_args(int argc, char **argv, option_line_t *options) {
+int _img2tiles_parse_args(int argc, char **argv, option_line_t *options) {
     options->input_file = NULL;
     options->help = 0;
     options->verbose = 0;
@@ -314,7 +314,7 @@ int main(int argc, char **argv) {
     int width, height, channels;
     option_line_t args;
 
-    int stat = parse_args(argc, argv, &args);
+    int stat = _img2tiles_parse_args(argc, argv, &args);
     if(stat == -1) {
         return ERR_IMG_UNK_ARG;
     } else if(stat == -2) {
@@ -322,7 +322,7 @@ int main(int argc, char **argv) {
     }
 
     if(args.help) {
-        func_help();
+        _img2tiles_func_help();
         return IMG_SUCCESS;
     }
 
@@ -339,18 +339,18 @@ int main(int argc, char **argv) {
     DEBUG("processing colors...");
     size_t tile_idx = 0;
     while(optind < argc) {
-        tiles[tile_idx].col = hex_to_rgb(argv[optind]);
+        tiles[tile_idx].col = _img2tiles_hex_to_rgb(argv[optind]);
         tile_idx++;
         optind++;
     }
 
     DEBUG("checking args for errors...");
-    check_vq(args.verbose, args.quiet);
+    _img2tiles_check_vq(args.verbose, args.quiet);
 
-    if(args.quiet) lock_outputs();
+    if(args.quiet) _img2tiles_lock_outputs();
 
     DEBUG("opening file: %s", args.input_file);
-    unsigned char* img = load_image(args.input_file, &width, &height, &channels, 4);
+    unsigned char* img = _img2tiles_load_image(args.input_file, &width, &height, &channels, 4);
     DEBUG("file processed successfully");
 
     DEBUG("Image: %dx%d, channels: %d\n", width, height, channels);
@@ -383,7 +383,7 @@ int main(int argc, char **argv) {
             src_col.a = img[idx + 3];
 
             for(size_t i = 0; i < (size_t)col_count; i++) {
-                if(color_matches(&src_col, &tiles[i].col, args.tolerance)) {
+                if(_img2tiles_color_matches(&src_col, &tiles[i].col, args.tolerance)) {
                     if(tiles[i].count == tiles[i].cap) {
                         size_t new_cap = (tiles[i].cap == 0) ? 4 : tiles[i].cap * 2;
                         pixel_t *tmp = realloc(tiles[i].pixels, sizeof(pixel_t) * new_cap);
@@ -429,7 +429,7 @@ int main(int argc, char **argv) {
     DEBUG("adding tiles and colors to json...");
     for(size_t i = 0; i < (size_t)col_count; i++) {
         if(tiles[i].count == 0) continue;
-        rect_list_t rects = merge_pixels(tiles[i].pixels, tiles[i].count, width, height);
+        rect_list_t rects = _img2tiles_merge_pixels(tiles[i].pixels, tiles[i].count, width, height);
 
         for(size_t r = 0; r < rects.count; r++) {
             yyjson_mut_val *rect_obj = create_rect_json_obj(doc, &rects.rects[r], &tiles[i].col);
@@ -441,7 +441,7 @@ int main(int argc, char **argv) {
     DEBUG("added successfully");
 
     DEBUG("creating json file...");
-    char *output_file = add_extension(args.input_file, ".json");
+    char *output_file = _img2tiles_add_extension(args.input_file, ".json");
     yyjson_write_err err;
     bool success = yyjson_mut_write_file(output_file, doc, YYJSON_WRITE_PRETTY, NULL, &err);
     DEBUG("created: %s", output_file);
