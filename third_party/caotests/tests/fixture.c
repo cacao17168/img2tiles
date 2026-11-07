@@ -6,8 +6,7 @@ CT_TEST(fixture_pass) {
     return 0;
 }
 
-/* CT_TEST(fixture_fail) {
+CT_TEST(fixture_fail) {
     CT_ASSERT_EQ(1, 2); //guaranteed to fall
     return 0;
 }
-*/
