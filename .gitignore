@@ -4,3 +4,4 @@
 *.jpg
 *.exe
 *.a
+.clangd
