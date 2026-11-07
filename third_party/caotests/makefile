@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -O0 -Wall -Wextra
+CFLAGS = -g -O0 -Wall -Wextra -lm
 
 # it is assumed that the source files are located in the project directory at the path third-party/caotests
 PROJECT_SRC_DIR = ../../src
@@ -20,11 +20,11 @@ all: test_framework fixture_tests
 
 # framework + meta tests
 test_framework: $(SRC)
-	$(CC) $^ $(INCLUDES) $(PROJECT_LIB) -o $@
+	$(CC) $^ $(INCLUDES) $(CFLAGS) $(PROJECT_LIB) -o $@
 
 # fixture for flags tests(1 complete and 1 fail)
 fixture_tests: $(SRC_FIXT)
-	$(CC) $^ $(INCLUDES) -o $@
+	$(CC) $^ $(INCLUDES) $(CFLAGS) -o $@
 
 # make all and launch meta tests
 test: all
