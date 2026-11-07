@@ -290,7 +290,7 @@ CT_TEST(test_main_verbose_quiet) {
     if (pid == 0) {
         char *argv[] = {"img2tiles", "-v", "-q", "-f", "dummy.png",
                         "FF0000FF", NULL};
-        img2tiles_main(5, argv);
+        img2tiles_main(6, argv);
         exit(0);
     }
     int status;
