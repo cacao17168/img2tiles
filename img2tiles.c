@@ -354,17 +354,17 @@ int main(int argc, char **argv) {
     unsigned char* img = _img2tiles_load_image(args.input_file, &width, &height, &channels, 4);
     DEBUG("file processed successfully");
 
-    DEBUG("Image: %dx%d, channels: %d\n", width, height, channels);
-    DEBUG("Target color: R=%u G=%u B=%u A=%u\n",
+    DEBUG("Image: %dx%d, channels: %d", width, height, channels);
+    DEBUG("Target color: R=%u G=%u B=%u A=%u",
         tiles[0].col.r,
         tiles[0].col.g,
         tiles[0].col.b,
         tiles[0].col.a
     );
-    DEBUG("\nFirst 10 pixels:\n");
+    DEBUG("First 10 pixels:\n");
     for (int i = 0; i < 10 && i < width * height; i++) {
         DEBUG(
-            "Pixel %d: R=%u G=%u B=%u A=%u\n",
+            "Pixel %d: R=%u G=%u B=%u A=%u",
             i,
             img[i * 4],
             img[i * 4 + 1],
@@ -419,7 +419,7 @@ int main(int argc, char **argv) {
 
     for (int i = 0; i < col_count; i++) {
         DEBUG(
-            "Color #%02X%02X%02X: %zu pixels\n",
+            "Color #%02X%02X%02X: %zu pixels",
             tiles[i].col.r,
             tiles[i].col.g,
             tiles[i].col.b,
