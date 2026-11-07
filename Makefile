@@ -24,10 +24,11 @@ windows: build_target
 build_target: $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) -lm
 
-libtest.a: $(TARGET).o
-	objcopy --redefine-sym main=$(TARGET)_main $^ $(TARGET)_aliased.o
-	ar rcs $@ $(TARGET)_aliased.o
-	rm -f $^ $(TARGET)_aliased.o src/$@
+libtest.a: $(OBJS)
+	objcopy --redefine-sym main=$(TARGET)_main $(TARGET).o $(TARGET)_aliased.o
+	ar rcs $@ $(TARGET)_aliased.o $(wordlist 2, $(words $^), $^)
+	rm -f $(TARGET)_aliased.o src/$@
+	mkdir -p src
 	mv $@ src/$@
 
 %.o: %.c
