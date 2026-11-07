@@ -20,7 +20,7 @@ all: test_framework fixture_tests
 
 # framework + meta tests
 test_framework: $(SRC)
-	$(CC) $^ $(INCLUDES) $(CFLAGS) $(PROJECT_LIB) -o $@
+	$(CC) $^ $(INCLUDES) $(PROJECT_LIB) $(CFLAGS) -o $@
 
 # fixture for flags tests(1 complete and 1 fail)
 fixture_tests: $(SRC_FIXT)
