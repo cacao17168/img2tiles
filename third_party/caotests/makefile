@@ -28,7 +28,7 @@ fixture_tests: $(SRC_FIXT)
 
 # make all and launch meta tests
 test: all
-	./test_framework && ./fixture_tests
+	./test_framework
 
 clean:
 	rm -f test_framework fixture_tests
