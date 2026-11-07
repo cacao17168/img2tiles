@@ -326,6 +326,7 @@ int main(int argc, char **argv) {
         return IMG_SUCCESS;
     }
 
+    verbose = args.verbose;
     int col_count = argc - optind;
 
     if(col_count <= 0) {
