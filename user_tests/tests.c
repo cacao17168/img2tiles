@@ -9,6 +9,28 @@
 #include <sys/wait.h>
 #endif
 
+#if defined(_WIN32)
+  #include <io.h>
+  #include <fcntl.h>
+  #define TEST_NULL       "nul"
+  #define t_dup           _dup
+  #define t_dup2          _dup2
+  #define t_close         _close
+  #define t_fileno        _fileno
+  #define t_open          _open
+  #define TEST_O_WRONLY   _O_WRONLY
+#else
+  #include <unistd.h>
+  #include <fcntl.h>
+  #define TEST_NULL       "/dev/null"
+  #define t_dup           dup
+  #define t_dup2          dup2
+  #define t_close         close
+  #define t_fileno        fileno
+  #define t_open          open
+  #define TEST_O_WRONLY   O_WRONLY
+#endif
+
 #define ERR_IMG_UNK_ARG    1
 #define ERR_IMG_NOFILE     2
 #define ERR_IMG_VQ         3
@@ -17,6 +39,13 @@
 #define ERR_IMG_NOCOL      6
 #define ERR_IMG_MEMERR     7
 #define ERR_IMG_HEX        8
+
+#define SILENCE_BEGIN() \
+    int _so, _se; \
+    do { if (silence_begin(&_so, &_se) != 0) { ct_fail_record("redirect failed"); } } while(0)
+
+#define SILENCE_END() \
+    do { silence_end(_so, _se); } while(0)
 
 typedef struct {
     unsigned char r, g, b, a;
@@ -41,6 +70,34 @@ rect_list_t _img2tiles_merge_pixels(pixel_t *pixels, size_t pixel_count, int img
 char *_img2tiles_add_extension(char *src, char *ext);
 bool _img2tiles_color_matches(color_t *src, color_t *trgt, int tol);
 int img2tiles_main(int argc, char **argv);
+
+static int silence_begin(int *saved_out, int *saved_err) {
+    fflush(stdout);
+    fflush(stderr);
+
+    *saved_out = t_dup(t_fileno(stdout));
+    *saved_err = t_dup(t_fileno(stderr));
+    if (*saved_out < 0 || *saved_err < 0) return -1;
+
+    int nullfd = t_open(TEST_NULL, TEST_O_WRONLY);
+    if (nullfd < 0) return -1;
+
+    t_dup2(nullfd, t_fileno(stdout));
+    t_dup2(nullfd, t_fileno(stderr));
+    t_close(nullfd);
+    return 0;
+}
+
+static void silence_end(int saved_out, int saved_err) {
+    fflush(stdout);
+    fflush(stderr);
+    t_dup2(saved_out, t_fileno(stdout));
+    t_dup2(saved_err, t_fileno(stderr));
+    t_close(saved_out);
+    t_close(saved_err);
+    clearerr(stdout);
+    clearerr(stderr);
+}
 
 CT_TEST(test_hex_to_rgb_valid) {
     color_t c;
@@ -251,21 +308,27 @@ CT_TEST(test_color_matches_different) {
 
 CT_TEST(test_main_help) {
     char *argv[] = {"img2tiles", "--help", NULL};
+    SILENCE_BEGIN();
     int ret = img2tiles_main(2, argv);
+    SILENCE_END();
     CT_ASSERT_EQ(0, ret);
     return 0;
 }
 
 CT_TEST(test_main_no_colors) {
     char *argv[] = {"img2tiles", NULL};
+    SILENCE_BEGIN();
     int ret = img2tiles_main(1, argv);
+    SILENCE_END();
     CT_ASSERT_EQ(ERR_IMG_NOCOL, ret);
     return 0;
 }
 
 CT_TEST(test_main_unknown_arg) {
     char *argv[] = {"img2tiles", "--unknown", NULL};
+    SILENCE_BEGIN();
     int ret = img2tiles_main(2, argv);
+    SILENCE_END();
     CT_ASSERT_EQ(ERR_IMG_UNK_ARG, ret);
     return 0;
 }
@@ -274,6 +337,8 @@ CT_TEST(test_main_unknown_arg) {
 CT_TEST(test_main_missing_file) {
     pid_t pid = fork();
     if (pid == 0) {
+        freopen(TEST_NULL, "w", stdout);
+        freopen(TEST_NULL, "w", stderr);
         char *argv[] = {"img2tiles", "-f", "nonexistent.png", "FF0000FF", NULL};
         img2tiles_main(4, argv);
         exit(0);
@@ -288,6 +353,8 @@ CT_TEST(test_main_missing_file) {
 CT_TEST(test_main_verbose_quiet) {
     pid_t pid = fork();
     if (pid == 0) {
+        freopen(TEST_NULL, "w", stdout);
+        freopen(TEST_NULL, "w", stderr);
         char *argv[] = {"img2tiles", "-v", "-q", "-f", "dummy.png",
                         "FF0000FF", NULL};
         img2tiles_main(6, argv);
@@ -326,7 +393,9 @@ CT_TEST(test_main_success) {
     }
 
     char *argv[] = {"img2tiles", "-f", (char*)ppm_file, "FF0000FF", NULL};
+    SILENCE_BEGIN();
     int ret = img2tiles_main(4, argv);
+    SILENCE_END();
     CT_ASSERT_EQ(0, ret);
 
     FILE *f = fopen(json_file, "r");
