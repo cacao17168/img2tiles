@@ -26,5 +26,4 @@ jobs:
         run: make libtest.a
 
       - name: Compile test framework with tests
-        working-directory: ./third-party/caotests
-        run: make test
+        run: cd third_party/caotests && make test
