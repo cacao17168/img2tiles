@@ -26,7 +26,7 @@ debug: CFLAGS := $(subst -O2,-Og,$(CFLAGS)) -g
 debug: build_target
 
 build_target: $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) -lm
+	$(CC) $(OBJS) $(LDFLAGS) -o $(TARGET) -lm
 
 libtest.a: $(OBJS)
 	objcopy --redefine-sym main=$(TARGET)_main $(TARGET).o $(TARGET)_aliased.o
@@ -36,7 +36,7 @@ libtest.a: $(OBJS)
 	mv $@ src/$@
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe $(OBJS) src/libtest.a
