@@ -11,7 +11,7 @@ OBJS = $(SRCS:.c=.o)
 
 CFLAGS = -Wall -Wextra -O2 -I$(YYJSON_DIR) -I$(STB_IMG) -I$(YA_GETOPT_DIR) -I$(CAOTESTS_DIR)
 
-.PHONY: all linux windows build_target clean
+.PHONY: all linux windows build_target clean debug
 
 all: linux
 
@@ -20,6 +20,9 @@ linux: build_target
 windows: CC = x86_64-w64-mingw32-gcc
 windows: CFLAGS += -static
 windows: build_target
+
+debug: CFLAGS := $(subst -O2,-Og,$(CFLAGS)) -g
+debug: build_target
 
 build_target: $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) -lm
